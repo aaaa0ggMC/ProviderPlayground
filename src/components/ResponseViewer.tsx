@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import './ResponseViewer.css';
 
 interface Props {
@@ -20,6 +21,7 @@ export default function ResponseViewer({
   onCopyRaw,
   defaultCollapsed,
 }: Props) {
+  const { t } = useLanguage();
   const [rawOpen, setRawOpen] = useState(!defaultCollapsed);
 
   // Re-collapse when defaultCollapsed changes (new response arrives)
@@ -32,7 +34,7 @@ export default function ResponseViewer({
   return (
     <div className="response-viewer">
       <div className="rv-header">
-        <h3>Response</h3>
+        <h3>{t('rv.response')}</h3>
         <div className="rv-meta">
           {status !== null && (
             <span
@@ -45,7 +47,7 @@ export default function ResponseViewer({
             <span className="rv-duration">{duration}ms</span>
           )}
           <button className="btn btn-small" onClick={onClear}>
-            Clear
+            {t('rv.clear')}
           </button>
         </div>
       </div>
@@ -59,7 +61,7 @@ export default function ResponseViewer({
             className="rv-raw-toggle"
             onClick={() => setRawOpen(!rawOpen)}
           >
-            Raw {rawOpen ? '▲' : '▼'}
+            {t('rv.raw')} {rawOpen ? '▲' : '▼'}
             <button
               className="btn btn-small rv-copy-btn"
               onClick={(e) => {
@@ -67,11 +69,11 @@ export default function ResponseViewer({
                 onCopyRaw();
               }}
             >
-              Copy
+              {t('rv.copy')}
             </button>
           </button>
           {rawOpen && (
-            <div className="rv-body">{formatBody(body)}</div>
+            <div className="rv-body">{formatBody(body, t)}</div>
           )}
         </div>
       )}
@@ -81,14 +83,14 @@ export default function ResponseViewer({
 
 const LONG_STR = 120;
 
-function FoldingJson({ data }: { data: unknown }): React.ReactNode {
-  if (data === null) return <span className="rj-null">null</span>;
+function FoldingJson({ data, t }: { data: unknown; t: (k: string) => string }): React.ReactNode {
+  if (data === null) return <span className="rj-null">{t('rv.null')}</span>;
   if (typeof data === 'boolean')
     return <span className="rj-bool">{String(data)}</span>;
   if (typeof data === 'number')
     return <span className="rj-num">{String(data)}</span>;
   if (typeof data === 'string')
-    return <FoldableString value={data} />;
+    return <FoldableString value={data} t={t} />;
   if (Array.isArray(data)) {
     if (data.every((v) => typeof v === 'string' && v.length <= 40)) {
       return <span className="rj-str">[{data.filter((v) => typeof v === 'string').map((v) => JSON.stringify(v)).join(', ')}]</span>;
@@ -99,7 +101,7 @@ function FoldingJson({ data }: { data: unknown }): React.ReactNode {
         <ol className="rj-array">
           {data.map((v, i) => (
             <li key={i}>
-              <FoldingJson data={v} />
+              <FoldingJson data={v} t={t} />
               {i < data.length - 1 && ','}
             </li>
           ))}
@@ -118,7 +120,7 @@ function FoldingJson({ data }: { data: unknown }): React.ReactNode {
             <li key={k}>
               <span className="rj-key">{JSON.stringify(k)}</span>
               <span>: </span>
-              <FoldingJson data={v} />
+              <FoldingJson data={v} t={t} />
               {i < entries.length - 1 && ','}
             </li>
           ))}
@@ -130,7 +132,7 @@ function FoldingJson({ data }: { data: unknown }): React.ReactNode {
   return <span>{String(data)}</span>;
 }
 
-function FoldableString({ value }: { value: string }): React.ReactNode {
+function FoldableString({ value, t }: { value: string; t: (k: string) => string }): React.ReactNode {
   const [expanded, setExpanded] = useState(false);
   if (value.length <= LONG_STR) {
     return <span className="rj-str">{JSON.stringify(value)}</span>;
@@ -142,16 +144,16 @@ function FoldableString({ value }: { value: string }): React.ReactNode {
       ) : (
         <span>
           {JSON.stringify(value.slice(0, LONG_STR))}
-          <span className="rj-ellipsis">… ({value.length} chars) click to expand</span>
+          <span className="rj-ellipsis">… ({value.length} chars) {t('rv.expand')}</span>
         </span>
       )}
     </span>
   );
 }
 
-function formatBody(raw: string): React.ReactNode {
+function formatBody(raw: string, t: (k: string) => string): React.ReactNode {
   try {
-    return <FoldingJson data={JSON.parse(raw)} />;
+    return <FoldingJson data={JSON.parse(raw)} t={t} />;
   } catch {
     return raw;
   }

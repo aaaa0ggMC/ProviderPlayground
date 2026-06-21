@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import './GlobalVars.css';
 
 export interface GlobalVar {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function GlobalVars({ vars, onChange }: Props) {
+  const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(true);
 
   const add = () => {
@@ -30,7 +32,7 @@ export default function GlobalVars({ vars, onChange }: Props) {
   return (
     <div className="global-vars">
       <div className="gv-header" onClick={() => setCollapsed(!collapsed)}>
-        <h3>Global Variables</h3>
+        <h3>{t('global.title')}</h3>
         <div className="gv-header-right">
           <span className="gv-count">{vars.length}</span>
           <span className="gv-toggle">{collapsed ? '+' : '-'}</span>
@@ -40,12 +42,11 @@ export default function GlobalVars({ vars, onChange }: Props) {
       {!collapsed && (
         <div className="gv-body">
           <p className="gv-hint">
-            Variables defined here are auto-inserted into templates and won't
-            appear as form fields.
+            {t('global.hint')}
           </p>
 
           {vars.length === 0 && (
-            <div className="gv-empty">No global variables defined.</div>
+            <div className="gv-empty">{t('global.empty')}</div>
           )}
 
           <div className="gv-rows">
@@ -55,7 +56,7 @@ export default function GlobalVars({ vars, onChange }: Props) {
                   className="gv-key"
                   value={v.key}
                   onChange={(e) => update(i, { key: e.target.value })}
-                  placeholder="name"
+                  placeholder={t('global.name')}
                   spellCheck={false}
                 />
                 <div className="gv-value-wrap">
@@ -64,13 +65,13 @@ export default function GlobalVars({ vars, onChange }: Props) {
                     type={v.secret ? 'password' : 'text'}
                     value={v.value}
                     onChange={(e) => update(i, { value: e.target.value })}
-                    placeholder="value"
+                    placeholder={t('global.value')}
                     spellCheck={false}
                   />
                   <button
                     className={`gv-secret-btn ${v.secret ? 'gv-secret-on' : ''}`}
                     onClick={() => update(i, { secret: !v.secret })}
-                    title={v.secret ? 'Show value' : 'Hide value'}
+                    title={v.secret ? t('global.show') : t('global.hide')}
                   >
                     {v.secret ? '~' : '#'}
                   </button>
@@ -78,7 +79,7 @@ export default function GlobalVars({ vars, onChange }: Props) {
                 <button
                   className="btn btn-small gv-remove"
                   onClick={() => remove(i)}
-                  title="Remove"
+                  title={t('global.remove')}
                 >
                   x
                 </button>
@@ -87,7 +88,7 @@ export default function GlobalVars({ vars, onChange }: Props) {
           </div>
 
           <button className="btn btn-primary btn-full" onClick={add}>
-            + Add Variable
+            {t('global.add')}
           </button>
         </div>
       )}

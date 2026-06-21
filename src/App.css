@@ -29,3 +29,8 @@
 .hidden-input {
   display: none;
 }
+
+.lang-btn {
+  min-width: 40px;
+  font-weight: 600;
+}
