@@ -310,8 +310,6 @@ export default function App() {
         id: crypto.randomUUID(),
         templateId: active.id,
         values: { ...varValues },
-        responseStatus: respStatus,
-        responseBody: respBody,
         duration,
         error: respError,
         timestamp: Date.now(),

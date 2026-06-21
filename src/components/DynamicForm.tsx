@@ -63,10 +63,9 @@ export default function DynamicForm({
                   <span className="df-history-summary">
                     {h.error
                       ? 'Error'
-                      : h.responseStatus !== null
-                        ? `${h.responseStatus}`
+                      : h.duration !== null
+                        ? `${h.duration}ms`
                         : '?'}
-                    {h.duration !== null && ` · ${h.duration}ms`}
                   </span>
                   <span className="df-history-vals">
                     {Object.entries(h.values)

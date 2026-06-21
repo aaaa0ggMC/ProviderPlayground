@@ -55,8 +55,6 @@ export interface SendHistoryEntry {
   id: string;
   templateId: string;
   values: Record<string, string>;
-  responseStatus: number | null;
-  responseBody: string;
   duration: number | null;
   error: string | null;
   timestamp: number;
