@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ParsedVar, RequestTemplate, RespTransform } from '../types';
 import { extractAllVars } from '../parser/variableParser';
-import { useLanguage } from '../i18n/LanguageContext';
 import './TemplateEditor.css';
 
 interface Props {
@@ -21,7 +20,6 @@ export default function TemplateEditor({
   globalVarNames,
   templates,
 }: Props) {
-  const { t: tr } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
   const [collapsedTransforms, setCollapsedTransforms] = useState<Record<string, boolean>>({});
   const [copySrc, setCopySrc] = useState('');
@@ -33,7 +31,7 @@ export default function TemplateEditor({
     onChange({ ...template, ...fields });
   };
 
-  const { global, form } = useMemo(() => {
+  const { all, global, form } = useMemo(() => {
     const all = extractAllVars([
       template.urlTemplate,
       template.headersTemplate,
@@ -80,7 +78,7 @@ export default function TemplateEditor({
           className="te-name"
           value={template.name}
           onChange={(e) => update({ name: e.target.value })}
-          placeholder={tr('te.name')}
+          placeholder="Template name..."
           onClick={(e) => e.stopPropagation()}
         />
         <span className="te-toggle">{collapsed ? '+' : '-'}</span>
@@ -89,7 +87,7 @@ export default function TemplateEditor({
       {!collapsed && (
         <div className="te-body">
           <div className="te-row">
-            <label>{tr('te.method')}</label>
+            <label>Method</label>
             <select
               value={template.method}
               onChange={(e) =>
@@ -108,16 +106,16 @@ export default function TemplateEditor({
 
           {otherTemplates.length > 0 && (
             <div className="te-row">
-              <label>{tr('te.copyFrom')}</label>
+              <label>Copy From</label>
               <div className="te-copy-row">
                 <select
                   value={copySrc}
                   onChange={(e) => setCopySrc(e.target.value)}
                 >
-                  <option value="">{tr('te.selectSource')}</option>
+                  <option value="">-- select source --</option>
                   {otherTemplates.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name || tr('tl.untitled')} ({t.method})
+                      {t.name || 'Untitled'} ({t.method})
                     </option>
                   ))}
                 </select>
@@ -134,7 +132,7 @@ export default function TemplateEditor({
                         })
                       }
                     >
-                      {tr('te.tabAll')}
+                      All
                     </button>
                     <button
                       className="btn btn-small"
@@ -142,7 +140,7 @@ export default function TemplateEditor({
                         copyFrom({ headersTemplate: srcTemplate.headersTemplate })
                       }
                     >
-                      {tr('te.tabHeaders')}
+                      Headers
                     </button>
                     <button
                       className="btn btn-small"
@@ -150,7 +148,7 @@ export default function TemplateEditor({
                         copyFrom({ bodyTemplate: srcTemplate.bodyTemplate })
                       }
                     >
-                      {tr('te.tabBody')}
+                      Body
                     </button>
                     <button
                       className="btn btn-small"
@@ -158,7 +156,7 @@ export default function TemplateEditor({
                         copyFrom({ respTransforms: [...srcTemplate.respTransforms] })
                       }
                     >
-                      {tr('te.tabTransforms')}
+                      Transforms
                     </button>
                   </div>
                 )}
@@ -167,7 +165,7 @@ export default function TemplateEditor({
           )}
 
           <div className="te-row">
-            <label>{tr('te.url')}</label>
+            <label>URL</label>
             <textarea
               className="te-input mono"
               rows={2}
@@ -178,7 +176,7 @@ export default function TemplateEditor({
           </div>
 
           <div className="te-row">
-            <label>{tr('te.headers')}</label>
+            <label>Headers</label>
             <textarea
               className="te-input mono"
               rows={3}
@@ -191,20 +189,24 @@ export default function TemplateEditor({
           </div>
 
           <div className="te-row">
-            <label>{tr('te.body')}</label>
+            <label>Body</label>
             <textarea
               className="te-input mono"
               rows={5}
               value={template.bodyTemplate}
               onChange={(e) => update({ bodyTemplate: e.target.value })}
-              placeholder={`{\n  "model": "{model_name:string}",\n  "size": "{size:number:range(256,1024)}",\n  "prompt": "{prompt:string}"\n}`}
+              placeholder={`{
+  "model": "{model_name:string}",
+  "size": "{size:number:range(256,1024)}",
+  "prompt": "{prompt:string}"
+}`}
             />
           </div>
 
           <div className="te-row">
-            <label>{tr('te.responseTransforms')}</label>
+            <label>Response Transforms</label>
             {transforms.length === 0 && (
-              <div className="te-empty">{tr('te.noTransforms')}</div>
+              <div className="te-empty">No transforms defined.</div>
             )}
             {transforms.map((rt, i) => (
               <div key={rt.id} className="te-transform-item">
@@ -217,296 +219,777 @@ export default function TemplateEditor({
                     }))
                   }
                 >
-                  <span>{rt.label || tr('te.nameLabel')}</span>
-                  <span className="te-transform-type">{rt.type}</span>
-                  <span className="te-toggle">{collapsedTransforms[rt.id] ? '+' : '-'}</span>
+                  <span className="te-transform-label">
+                    <span className={`te-collapse-arrow ${collapsedTransforms[rt.id] ? '' : 'te-collapse-open'}`}>▶</span>
+                    {rt.label || `#${i + 1}`}
+                    <em>{rt.type}</em>
+                  </span>
+                  <div className="te-transform-actions">
+                    <button
+                      className="btn btn-small te-order-btn"
+                      disabled={i === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = [...transforms];
+                        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                        update({ respTransforms: next });
+                      }}
+                      title="Move up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      className="btn btn-small te-order-btn"
+                      disabled={i === transforms.length - 1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = [...transforms];
+                        [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                        update({ respTransforms: next });
+                      }}
+                      title="Move down"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      className="btn btn-small te-order-btn te-del-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        update({
+                          respTransforms: transforms.filter(
+                            (_, j) => j !== i,
+                          ),
+                        });
+                      }}
+                      title="Delete"
+                    >
+                      x
+                    </button>
+                  </div>
                 </div>
-
                 {!collapsedTransforms[rt.id] && (
-                  <div className="te-transform-body">
-                    {global.length > 0 && (
-                      <div className="te-global-vars">
-                        <span className="te-global-label">{tr('te.global')}</span>
-                        {global.map(v => (
-                          <span key={v.name} className="te-global-var">{v.name}{(v.constraint || v.defaultValue !== undefined) && <span className="te-var-detail">{v.constraint ? ` (${v.type})` : ''}{v.defaultValue !== undefined ? ` = ${v.defaultValue}` : ''}</span>}</span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="te-row">
-                      <label>{tr('te.type')}</label>
-                      <select
-                        value={rt.type}
-                        onChange={(e) =>
-                          updateTransformField(i, 'type', e.target.value)
-                        }
-                      >
-                        <option value="text">{tr('te.type')}: text</option>
-                        <option value="img">img</option>
-                        <option value="audio">audio</option>
-                        <option value="audio-url">audio-url</option>
-                        <option value="video-url">video-url</option>
-                        <option value="task">task</option>
-                      </select>
-                    </div>
-
-                    <div className="te-row">
-                      <label>{tr('te.format')}</label>
-                      <select
+                <div className="te-transform-body">
+                  <label className="te-field-label">Name</label>
+                  <input
+                    type="text"
+                    className="te-input"
+                    value={rt.label}
+                    onChange={(e) => {
+                      const next = [...transforms];
+                      next[i] = { ...next[i], label: e.target.value };
+                      update({ respTransforms: next });
+                    }}
+                    placeholder="e.g. Extract reply text"
+                  />
+                  <label className="te-field-label">Type</label>
+                  <select
+                    value={rt.type}
+                    onChange={(e) => {
+                      const next = [...transforms];
+                      next[i] = {
+                        ...next[i],
+                        type: e.target.value as RespTransform['type'],
+                      };
+                      update({ respTransforms: next });
+                    }}
+                  >
+                    <option value="text">Text</option>
+                    <option value="img">Image</option>
+                    <option value="audio">Audio</option>
+                    <option value="audio-url">Audio URL</option>
+                    <option value="video-url">Video URL</option>
+                    <option value="task">Task</option>
+                  </select>
+                  {rt.type === 'text' && (
+                    <div className="te-field-group">
+                      <label className="te-field-label">
+                        Format <span className="te-field-hint">— JSON path expressions like {'{.path}'}</span>
+                      </label>
+                      <textarea
+                        className="te-input mono"
+                        rows={2}
                         value={rt.format}
-                        onChange={(e) =>
-                          updateTransformField(i, 'format', e.target.value)
-                        }
-                      >
-                        <option value="clean">{tr('te.format')}: clean</option>
-                        <option value="raw">raw</option>
-                      </select>
-                    </div>
-
-                    <div className="te-row">
-                      <label>{tr('te.entryPath')}</label>
-                      <input
-                        className="te-input"
-                        value={rt.entry}
-                        onChange={(e) =>
-                          updateTransformField(i, 'entry', e.target.value)
-                        }
-                        placeholder="$.data.images"
+                        onChange={(e) => {
+                          const next = [...transforms];
+                          next[i] = { ...next[i], format: e.target.value };
+                          update({ respTransforms: next });
+                        }}
+                        placeholder={`{.choices[0].message.content}`}
                       />
                     </div>
-
-                    {rt.type === 'audio' && (
-                      <div className="te-row">
-                        <label>{tr('te.audioMime')}</label>
+                  )}
+                  {rt.type === 'img' && (
+                    <div className="te-field-group">
+                      <label className="te-field-label">
+                        Entry Path <span className="te-field-hint">— JSON path to the image field in response</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="te-input mono"
+                        value={rt.entry}
+                        onChange={(e) => {
+                          const next = [...transforms];
+                          next[i] = { ...next[i], entry: e.target.value };
+                          update({ respTransforms: next });
+                        }}
+                        placeholder=".images[0]"
+                      />
+                    </div>
+                  )}
+                  {rt.type === 'audio' && (
+                    <>
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Entry Path <span className="te-field-hint">— JSON path to base64 data or data: scheme</span>
+                        </label>
                         <input
-                          className="te-input"
-                          value={rt.audioMime}
-                          onChange={(e) =>
-                            updateTransformField(i, 'audioMime', e.target.value)
-                          }
-                          placeholder="audio/mpeg"
+                          type="text"
+                          className="te-input mono"
+                          value={rt.entry}
+                          onChange={(e) => {
+                            const next = [...transforms];
+                            next[i] = { ...next[i], entry: e.target.value };
+                            update({ respTransforms: next });
+                          }}
+                          placeholder=".audios[0].audio_url"
                         />
                       </div>
-                    )}
-
-                    {rt.type === 'video-url' && (
-                      <>
-                        <div className="te-row">
-                          <label>{tr('te.audioMime')}</label>
+                      <div className="te-field-group">
+                          <label className="te-field-label">Encoding</label>
+                          <select
+                            value={rt.encoding || 'base64'}
+                            onChange={(e) => {
+                              const next = [...transforms];
+                              next[i] = {
+                                ...next[i],
+                                encoding: e.target.value as RespTransform['encoding'],
+                              };
+                              update({ respTransforms: next });
+                            }}
+                          >
+                            <option value="base64">Base64</option>
+                            <option value="hex8">Hex8</option>
+                          </select>
+                        </div>
+                        <div className="te-field-group">
+                          <label className="te-field-label">
+                            MIME Type <span className="te-field-hint">— auto-detected if blank</span>
+                          </label>
                           <input
-                            className="te-input"
-                            value={rt.audioMime}
-                            onChange={(e) =>
-                              updateTransformField(i, 'audioMime', e.target.value)
-                            }
-                            placeholder="audio/mpeg"
+                            type="text"
+                            className="te-input te-mime-input"
+                            value={rt.audioMime || ''}
+                            onChange={(e) => {
+                              const next = [...transforms];
+                              next[i] = { ...next[i], audioMime: e.target.value };
+                              update({ respTransforms: next });
+                            }}
+                            placeholder="audio/wav"
+                            spellCheck={false}
                           />
                         </div>
-                        <div className="te-row">
-                          <label>{tr('te.mimeType')}</label>
-                          <input
-                            className="te-input"
-                            value={rt.audioMime}
-                            onChange={(e) =>
-                              updateTransformField(i, 'audioMime', e.target.value)
-                            }
-                            placeholder="video/mp4"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {(rt.type === 'audio' || rt.type === 'video-url') && (
-                      <div className="te-row">
-                        <label>{tr('te.encoding')}</label>
-                        <select
-                          value={rt.encoding}
-                          onChange={(e) =>
-                            updateTransformField(i, 'encoding', e.target.value)
-                          }
-                        >
-                          <option value="base64">base64</option>
-                          <option value="hex8">hex8</option>
-                        </select>
+                    </>
+                  )}
+                  {rt.type === 'audio-url' && (
+                    <>
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Entry URL <span className="te-field-hint">— JSON path to audio URL in response</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="te-input mono"
+                          value={rt.entry}
+                          onChange={(e) => {
+                            const next = [...transforms];
+                            next[i] = { ...next[i], entry: e.target.value };
+                            update({ respTransforms: next });
+                          }}
+                          placeholder=".audios[0].audio_url"
+                        />
                       </div>
-                    )}
-
-                    {rt.type === 'task' && (
-                      <>
-                        <div className="te-task-section">
-                          <h4>{tr('te.responseTransforms')}</h4>
-                          <div className="te-row">
-                            <label>{tr('te.taskIdPath')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskAddr}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskAddr', e.target.value)
-                              }
-                              placeholder="https://api.example.com/tasks/{task_id}"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.pollUrl')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskMethod}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskMethod', e.target.value)
-                              }
-                              placeholder="GET"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.queryParams')}</label>
-                            <textarea
-                              className="te-input mono"
-                              rows={2}
-                              value={rt.taskQuery}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskQuery', e.target.value)
-                              }
-                              placeholder={`key={value}\n{$.id}`}
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.headers')}</label>
-                            <textarea
-                              className="te-input mono"
-                              rows={2}
-                              value={rt.taskHeaders}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskHeaders', e.target.value)
-                              }
-                              placeholder="Authorization: Bearer {api_key}"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.statusPath')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskStatusPath}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskStatusPath', e.target.value)
-                              }
-                              placeholder="$.status"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.successValue')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskStatusVal}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskStatusVal', e.target.value)
-                              }
-                              placeholder="completed"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.failValue')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskFailVal}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskFailVal', e.target.value)
-                              }
-                              placeholder="failed"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.failReasonPath')}</label>
-                            <input
-                              className="te-input"
-                              value={rt.taskFailReasonPath}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskFailReasonPath', e.target.value)
-                              }
-                              placeholder="$.error"
-                            />
-                          </div>
-                          <div className="te-row">
-                            <label>{tr('te.pollInterval')}</label>
-                            <input
-                              type="number"
-                              className="te-input"
-                              value={rt.taskPollMs}
-                              onChange={(e) =>
-                                updateTransformField(i, 'taskPollMs', Number(e.target.value))
-                              }
-                              placeholder="2000"
-                            />
-                          </div>
+                      <div className="te-field-group">
+                          <label className="te-field-label">
+                            Audio MIME <span className="te-field-hint">— optional; auto-detected if empty</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.audioMime || ''}
+                            onChange={(e) => {
+                              const next = [...transforms];
+                              next[i] = { ...next[i], audioMime: e.target.value };
+                              update({ respTransforms: next });
+                            }}
+                            placeholder="auto"
+                          />
                         </div>
-
-                        {rt.taskTransforms?.length > 0 && (
-                          <div className="te-nested-transforms">
-                            <h4>{tr('te.responseTransforms')}</h4>
-                            {rt.taskTransforms.map((sub, si) => (
-                              <div key={sub.id} className="te-transform-item te-nested">
-                                <div className="te-row">
-                                  <label>{tr('te.nameLabel')}</label>
-                                  <input
-                                    className="te-input"
-                                    value={sub.label}
+                    </>
+                  )}
+                  {rt.type === 'video-url' && (
+                    <>
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Entry URL <span className="te-field-hint">— JSON path to video URL in response</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="te-input mono"
+                          value={rt.entry}
+                          onChange={(e) => {
+                            const next = [...transforms];
+                            next[i] = { ...next[i], entry: e.target.value };
+                            update({ respTransforms: next });
+                          }}
+                          placeholder=".videos[0].video_url"
+                        />
+                      </div>
+                      <div className="te-field-group">
+                          <label className="te-field-label">
+                            Video MIME <span className="te-field-hint">— optional; auto-detected if empty</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.audioMime || ''}
+                            onChange={(e) => {
+                              const next = [...transforms];
+                              next[i] = { ...next[i], audioMime: e.target.value };
+                              update({ respTransforms: next });
+                            }}
+                            placeholder="auto"
+                          />
+                        </div>
+                    </>
+                  )}
+                  {rt.type === 'task' && (
+                    <div className="te-task-fields">
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Task ID Path <span className="te-field-hint">— JSON path extracting the task ID from initial response</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="te-input mono"
+                          value={rt.entry}
+                          onChange={(e) => updateTransformField(i, 'entry', e.target.value)}
+                          placeholder=".task_id"
+                        />
+                      </div>
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Poll URL <span className="te-field-hint">— endpoint to poll for task status</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="te-input mono"
+                          value={rt.taskAddr}
+                          onChange={(e) => updateTransformField(i, 'taskAddr', e.target.value)}
+                          placeholder="https://api.example.com/v1/task"
+                        />
+                      </div>
+                      <div className="te-field-group">
+                        <label className="te-field-label">
+                          Headers <span className="te-field-hint">— one per line, Key: value</span>
+                        </label>
+                        <textarea
+                          className="te-input mono te-template-textarea"
+                          rows={2}
+                          value={rt.taskHeaders}
+                          onChange={(e) => updateTransformField(i, 'taskHeaders', e.target.value)}
+                          placeholder={'Authorization: Bearer my-token\nContent-Type: application/json'}
+                        />
+                      </div>
+                      <div className="te-field-group">
+                          <label className="te-field-label">
+                            Query Params <span className="te-field-hint">— appended to Poll URL</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.taskQuery}
+                            onChange={(e) => updateTransformField(i, 'taskQuery', e.target.value)}
+                            placeholder="task_id auto-filled; add extras like &other={.path}"
+                          />
+                        </div>
+                        <div className="te-field-group">
+                          <label className="te-field-label">
+                            Status Path <span className="te-field-hint">— JSON path to status value in poll response</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.taskStatusPath}
+                            onChange={(e) => updateTransformField(i, 'taskStatusPath', e.target.value)}
+                            placeholder=".task.status"
+                          />
+                        </div>
+                      <div className="te-field-group">
+                          <label className="te-field-label">
+                            Success Value <span className="te-field-hint">— value that indicates task is done</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.taskStatusVal}
+                            onChange={(e) => updateTransformField(i, 'taskStatusVal', e.target.value)}
+                            placeholder="SUCCESS"
+                          />
+                        </div>
+                        <div className="te-field-group">
+                          <label className="te-field-label">
+                            Fail Reason Path <span className="te-field-hint">— JSON path for error message if failed</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.taskFailReasonPath}
+                            onChange={(e) => updateTransformField(i, 'taskFailReasonPath', e.target.value)}
+                            placeholder=".task.reason"
+                          />
+                        </div>
+                        <div className="te-field-group">
+                          <label className="te-field-label">
+                            Fail Value <span className="te-field-hint">— status value indicating failure (e.g. FAILED)</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="te-input mono"
+                            value={rt.taskFailVal}
+                            onChange={(e) => updateTransformField(i, 'taskFailVal', e.target.value)}
+                            placeholder="FAILED"
+                          />
+                        </div>
+                        <div className="te-field-group">
+                          <label className="te-field-label">Poll Interval (ms)</label>
+                          <input
+                            type="number"
+                            className="te-input"
+                            value={rt.taskPollMs || 2000}
+                            onChange={(e) => updateTransformField(i, 'taskPollMs', Number(e.target.value))}
+                            placeholder="2000"
+                            style={{maxWidth:110}}
+                          />
+                        </div>
+                      {/* Nested response transforms for the successful poll response */}
+                      <div className="te-nested-transforms">
+                        <div className="te-nested-header">
+                          <span className="te-nested-label">Response Transforms</span>
+                          <button
+                            className="btn btn-small"
+                            onClick={() => {
+                              const next = [...transforms];
+                              const sub = [...(next[i].taskTransforms || [])];
+                              sub.push({
+                                id: crypto.randomUUID(),
+                                type: 'text',
+                                label: '',
+                                format: '',
+                                entry: '',
+                                encoding: 'base64',
+                                audioMime: '',
+                                taskAddr: '',
+                                taskMethod: 'GET',
+                                taskHeaders: '',
+                                taskQuery: '',
+                                taskStatusPath: '',
+                                taskStatusVal: '',
+                                taskFailVal: '',
+                                taskPollMs: 2000,
+                                taskFailReasonPath: '',
+                                taskTransforms: [],
+                              });
+                              next[i] = { ...next[i], taskTransforms: sub };
+                              update({ respTransforms: next });
+                            }}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                        {(rt.taskTransforms || []).length === 0 && (
+                          <div className="te-empty">No response transforms.</div>
+                        )}
+                        {(rt.taskTransforms || []).map((sub, si) => (
+                          <div key={sub.id} className="te-nested-item">
+                            <div
+                              className="te-nested-item-header"
+                              onClick={() =>
+                                setCollapsedTransforms(prev => ({
+                                  ...prev,
+                                  [sub.id]: !prev[sub.id],
+                                }))
+                              }
+                            >
+                              <span className="te-nested-item-label">
+                                <span className={`te-collapse-arrow ${collapsedTransforms[sub.id] ? '' : 'te-collapse-open'}`}>▶</span>
+                                {sub.label || `#${si + 1}`}
+                                <em>{sub.type}</em>
+                              </span>
+                              <div className="te-transform-actions">
+                                <button
+                                  className="btn btn-small te-order-btn"
+                                  disabled={si === 0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const next = [...transforms];
+                                    const sub = [...next[i].taskTransforms];
+                                    [sub[si - 1], sub[si]] = [sub[si], sub[si - 1]];
+                                    next[i] = { ...next[i], taskTransforms: sub };
+                                    update({ respTransforms: next });
+                                  }}
+                                  title="Move up"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  className="btn btn-small te-order-btn"
+                                  disabled={si === (rt.taskTransforms || []).length - 1}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const next = [...transforms];
+                                    const sub = [...next[i].taskTransforms];
+                                    [sub[si], sub[si + 1]] = [sub[si + 1], sub[si]];
+                                    next[i] = { ...next[i], taskTransforms: sub };
+                                    update({ respTransforms: next });
+                                  }}
+                                  title="Move down"
+                                >
+                                  ▼
+                                </button>
+                                <button
+                                  className="btn btn-small te-order-btn te-del-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const next = [...transforms];
+                                    next[i] = {
+                                      ...next[i],
+                                      taskTransforms: next[i].taskTransforms.filter(
+                                        (_, j) => j !== si,
+                                      ),
+                                    };
+                                    update({ respTransforms: next });
+                                  }}
+                                  title="Delete"
+                                >
+                                  x
+                                </button>
+                              </div>
+                            </div>
+                            {!collapsedTransforms[sub.id] && (
+                            <div className="te-nested-body">
+                              <label className="te-field-label">Name</label>
+                              <input
+                                type="text"
+                                className="te-input"
+                                value={sub.label}
+                                onChange={(e) =>
+                                  updateNestedTransformField(i, si, 'label', e.target.value)
+                                }
+                                placeholder="e.g. Extract reply text"
+                              />
+                              <label className="te-field-label">Type</label>
+                              <select
+                                value={sub.type}
+                                onChange={(e) =>
+                                  updateNestedTransformField(
+                                    i,
+                                    si,
+                                    'type',
+                                    e.target.value as RespTransform['type'],
+                                  )
+                                }
+                              >
+                                <option value="text">Text</option>
+                                <option value="img">Image</option>
+                                <option value="audio">Audio</option>
+                                <option value="audio-url">Audio URL</option>
+                                <option value="video-url">Video URL</option>
+                              </select>
+                              {sub.type === 'text' && (
+                                <div className="te-field-group">
+                                  <label className="te-field-label">
+                                    Format{' '}
+                                    <span className="te-field-hint">
+                                      — JSON path expressions like {'{.path}'}
+                                    </span>
+                                  </label>
+                                  <textarea
+                                    className="te-input mono"
+                                    rows={2}
+                                    value={sub.format}
                                     onChange={(e) =>
-                                      updateNestedTransformField(i, si, 'label', e.target.value)
+                                      updateNestedTransformField(i, si, 'format', e.target.value)
                                     }
+                                    placeholder={`{.choices[0].message.content}`}
                                   />
                                 </div>
-                                <div className="te-row">
-                                  <label>{tr('te.type')}</label>
-                                  <select
-                                    value={sub.type}
-                                    onChange={(e) =>
-                                      updateNestedTransformField(i, si, 'type', e.target.value)
-                                    }
-                                  >
-                                    <option value="text">text</option>
-                                    <option value="img">img</option>
-                                    <option value="audio">audio</option>
-                                    <option value="audio-url">audio-url</option>
-                                    <option value="video-url">video-url</option>
-                                  </select>
-                                </div>
-                                <div className="te-row">
-                                  <label>{tr('te.entryPath')}</label>
+                              )}
+                              {sub.type === 'img' && (
+                                <div className="te-field-group">
+                                  <label className="te-field-label">
+                                    Entry Path{' '}
+                                    <span className="te-field-hint">
+                                      — JSON path to the image field in response
+                                    </span>
+                                  </label>
                                   <input
-                                    className="te-input"
+                                    type="text"
+                                    className="te-input mono"
                                     value={sub.entry}
                                     onChange={(e) =>
                                       updateNestedTransformField(i, si, 'entry', e.target.value)
                                     }
-                                    placeholder="$.data"
+                                    placeholder=".images[0]"
                                   />
                                 </div>
-                              </div>
-                            ))}
+                              )}
+                              {sub.type === 'audio-url' && (
+                                <>
+                                  <div className="te-field-group">
+                                    <label className="te-field-label">
+                                      Entry URL{' '}
+                                      <span className="te-field-hint">
+                                        — JSON path to audio URL in response
+                                      </span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="te-input mono"
+                                      value={sub.entry}
+                                      onChange={(e) =>
+                                        updateNestedTransformField(i, si, 'entry', e.target.value)
+                                      }
+                                      placeholder=".audios[0].audio_url"
+                                    />
+                                  </div>
+                                  <div className="te-field-group">
+                                      <label className="te-field-label">Audio MIME</label>
+                                      <input
+                                        type="text"
+                                        className="te-input mono"
+                                        value={sub.audioMime || ''}
+                                        onChange={(e) =>
+                                          updateNestedTransformField(
+                                            i,
+                                            si,
+                                            'audioMime',
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="auto"
+                                        spellCheck={false}
+                                      />
+                                    </div>
+                                </>
+                              )}
+                              {sub.type === 'video-url' && (
+                                <>
+                                  <div className="te-field-group">
+                                    <label className="te-field-label">
+                                      Entry URL{' '}
+                                      <span className="te-field-hint">
+                                        — JSON path to video URL in response
+                                      </span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="te-input mono"
+                                      value={sub.entry}
+                                      onChange={(e) =>
+                                        updateNestedTransformField(i, si, 'entry', e.target.value)
+                                      }
+                                      placeholder=".videos[0].video_url"
+                                    />
+                                  </div>
+                                  <div className="te-field-group">
+                                      <label className="te-field-label">Video MIME</label>
+                                      <input
+                                        type="text"
+                                        className="te-input mono"
+                                        value={sub.audioMime || ''}
+                                        onChange={(e) =>
+                                          updateNestedTransformField(
+                                            i,
+                                            si,
+                                            'audioMime',
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="auto"
+                                        spellCheck={false}
+                                      />
+                                    </div>
+                                </>
+                              )}
+                              {sub.type === 'audio' && (
+                                <>
+                                  <div className="te-field-group">
+                                    <label className="te-field-label">
+                                      Entry Path{' '}
+                                      <span className="te-field-hint">
+                                        — JSON path to the audio data in response
+                                      </span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="te-input mono"
+                                      value={sub.entry}
+                                      onChange={(e) =>
+                                        updateNestedTransformField(i, si, 'entry', e.target.value)
+                                      }
+                                      placeholder=".audios[0].audio_url"
+                                    />
+                                  </div>
+                                  <div className="te-field-group">
+                                      <label className="te-field-label">Encoding</label>
+                                      <select
+                                        value={sub.encoding || 'base64'}
+                                        onChange={(e) =>
+                                          updateNestedTransformField(
+                                            i,
+                                            si,
+                                            'encoding',
+                                            e.target.value as RespTransform['encoding'],
+                                          )
+                                        }
+                                      >
+                                        <option value="base64">Base64</option>
+                                        <option value="hex8">Hex8</option>
+                                      </select>
+                                    </div>
+                                    <div className="te-field-group">
+                                      <label className="te-field-label">
+                                        MIME Type{' '}
+                                        <span className="te-field-hint">
+                                          — auto-detected if blank
+                                        </span>
+                                      </label>
+                                      <input
+                                        type="text"
+                                        className="te-input te-mime-input"
+                                        value={sub.audioMime || ''}
+                                        onChange={(e) =>
+                                          updateNestedTransformField(
+                                            i,
+                                            si,
+                                            'audioMime',
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="audio/wav"
+                                        spellCheck={false}
+                                      />
+                                    </div>
+                                </>
+                              )}
+                            </div>
+                          )}
                           </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {form.length > 0 && (
-            <div className="te-form-vars">
-              <span className="te-global-label">{tr('te.formFields')}</span>
-              {form.map(v => (
-                <span key={v.name} className="te-global-var">{v.name}{(v.constraint || v.defaultValue !== undefined) && <span className="te-var-detail">{v.constraint ? ` (${v.type})` : ''}{v.defaultValue !== undefined ? ` = ${v.defaultValue}` : ''}</span>}</span>
-              ))}
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-
-          <div className="te-footer">
-            <button className="btn btn-danger" onClick={onDelete}>
-              {tr('te.delete')}
+            ))}
+            <button
+              className="btn btn-small"
+              onClick={() =>
+                update({
+                  respTransforms: [
+                    ...transforms,
+                    {
+                      id: crypto.randomUUID(),
+                      type: 'text',
+                      label: '',
+                      format: '',
+                      entry: '',
+                      encoding: 'base64',
+                      audioMime: '',
+                      taskAddr: '',
+                      taskMethod: 'GET',
+                      taskHeaders: '',
+                      taskQuery: '',
+                      taskStatusPath: '',
+                      taskStatusVal: '',
+                      taskFailVal: '',
+                      taskPollMs: 2000,
+                      taskFailReasonPath: '',
+                      taskTransforms: [],
+                    },
+                  ],
+                })
+              }
+            >
+              + Add Transform
             </button>
           </div>
+
+          <button className="btn btn-danger" onClick={onDelete}>
+            Delete Template
+          </button>
+        </div>
+      )}
+
+      {all.length > 0 && !collapsed && (
+        <div className="te-vars">
+          {global.length > 0 && (
+            <>
+              <strong>Global (auto-filled):</strong>
+              <div className="te-var-list">
+                {global.map((v) => (
+                  <span key={v.name} className="te-var-badge te-var-global">
+                    {v.name}
+                    <em>
+                      {v.type}
+                      {v.constraint ? constraintLabel(v.constraint) : ''}
+                      {defaultLabel(v.defaultValue)}
+                    </em>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {form.length > 0 && (
+            <>
+              <strong>Form fields:</strong>
+              <div className="te-var-list">
+                {form.map((v) => (
+                  <span key={v.name} className="te-var-badge">
+                    {v.name}
+                    <em>
+                      {v.type}
+                      {v.constraint ? constraintLabel(v.constraint) : ''}
+                      {defaultLabel(v.defaultValue)}
+                    </em>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
   );
+}
+
+function constraintLabel(
+  c: NonNullable<import('../types').ParsedVar['constraint']>,
+): string {
+  switch (c.kind) {
+    case 'range':
+      return ` ${c.min}-${c.max}`;
+    case 'min':
+      return ` >=${c.val}`;
+    case 'max':
+      return ` <=${c.val}`;
+    case 'options':
+      return ` [${c.values.join(', ')}]`;
+  }
+}
+
+function defaultLabel(dv: string | undefined): string {
+  return dv !== undefined ? ` = ${dv}` : '';
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RespTransform } from '../types';
 import { resolveJsonPath, interpolate, applyTransforms, type TransformResult } from '../parser/variableParser';
-import { useLanguage } from '../i18n/LanguageContext';
 import './TaskPoller.css';
 
 interface TaskState {
@@ -21,7 +20,6 @@ interface Props {
 }
 
 export default function TaskPoller({ transforms, initialResponse, variables, onComplete }: Props) {
-  const { t: tr } = useLanguage();
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tasksRef = useRef(tasks);
@@ -36,9 +34,9 @@ export default function TaskPoller({ transforms, initialResponse, variables, onC
       .map((t) => {
         return {
           transformId: t.id,
-          label: t.label || tr('tp.task'),
+          label: t.label || 'Task',
           status: 'polling' as const,
-          statusText: tr('tp.starting'),
+          statusText: 'Starting...',
           failReason: '',
           results: [],
         };
@@ -121,17 +119,17 @@ export default function TaskPoller({ transforms, initialResponse, variables, onC
         } else if (statusVal === tf.taskStatusVal) {
           const results = await applyTransforms(text, tf.taskTransforms);
           // Prepend raw response
-          const rawResult: TransformResult = { kind: 'text', label: tr('tp.rawResponse'), value: text };
+          const rawResult: TransformResult = { kind: 'text', label: 'Raw Response', value: text };
           updated[i] = {
             ...updated[i],
             status: 'done',
-            statusText: tr('tp.success'),
+            statusText: 'Success',
             results: [rawResult, ...results],
           };
         } else {
           updated[i] = {
             ...updated[i],
-            statusText: statusVal || tr('tp.processing'),
+            statusText: statusVal || 'Processing...',
           };
           allDone = false;
         }
@@ -154,7 +152,7 @@ export default function TaskPoller({ transforms, initialResponse, variables, onC
       const allResults: TransformResult[] = [];
       for (const t of updated) {
         const children = t.status === 'failed'
-          ? [{ kind: 'text' as const, label: tr('tp.error'), value: t.failReason }]
+          ? [{ kind: 'text' as const, label: 'Error', value: t.failReason }]
           : t.results;
         allResults.push({
           kind: 'text',
@@ -177,7 +175,7 @@ export default function TaskPoller({ transforms, initialResponse, variables, onC
 
   return (
     <div className="task-poller">
-      <h3 className="tp-heading">{tr('tp.title')}</h3>
+      <h3 className="tp-heading">Task Progress</h3>
       {tasks.map((t) => (
         <div key={t.transformId} className={`tp-item tp-${t.status}`}>
           <span className="tp-label">{t.label}</span>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { TransformResult } from '../parser/variableParser';
-import { useLanguage } from '../i18n/LanguageContext';
 import './FinalResponse.css';
 
 interface Props {
@@ -26,7 +25,7 @@ function extFromMime(mime: string | undefined): string {
   }
 }
 
-function ResultItem({ r, depth, onRetry, t }: { r: TransformResult; depth: number; onRetry?: (label: string) => void; t: (k: string) => string }) {
+function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; onRetry?: (label: string) => void }) {
   const hasChildren = r.children && r.children.length > 0;
   const isRawResponse = r.label === 'Raw Response' && !hasChildren;
   const [rawCollapsed, setRawCollapsed] = useState(isRawResponse);
@@ -45,7 +44,7 @@ function ResultItem({ r, depth, onRetry, t }: { r: TransformResult; depth: numbe
           </span>
         )}
         {hasChildren && onRetry && (
-          <button className="fr-retry-btn" onClick={() => onRetry(r.label)} title={t('fr.retry')}>
+          <button className="fr-retry-btn" onClick={() => onRetry(r.label)} title="Retry task">
             ↻
           </button>
         )}
@@ -60,7 +59,7 @@ function ResultItem({ r, depth, onRetry, t }: { r: TransformResult; depth: numbe
               {r.images.map((url, j) => (
                 <div key={j} className="fr-img-wrap">
                   <img src={url} alt={`${r.label || 'Image'} ${j + 1}`} />
-                  <a href={url} download={`image_${j + 1}`} target="_blank" rel="noreferrer" className="btn btn-small">{t('fr.download')}</a>
+                  <a href={url} download={`image_${j + 1}`} target="_blank" rel="noreferrer" className="btn btn-small">Download</a>
                 </div>
               ))}
             </div>
@@ -68,19 +67,19 @@ function ResultItem({ r, depth, onRetry, t }: { r: TransformResult; depth: numbe
           {!hasChildren && r.kind === 'video' && r.videoSrc && (
             <div className="fr-video">
               <video controls src={r.videoSrc} style={{ maxWidth: '100%', borderRadius: 6 }} />
-              <a href={r.videoSrc} download={`video.${extFromMime(r.videoType)}`} className="btn btn-small">{t('fr.download')}</a>
+              <a href={r.videoSrc} download={`video.${extFromMime(r.videoType)}`} className="btn btn-small">Download</a>
             </div>
           )}
           {!hasChildren && r.kind === 'audio' && r.audioSrc && (
             <div className="fr-audio">
               <audio controls src={r.audioSrc} />
-              <a href={r.audioSrc} download={`audio.${extFromMime(r.audioType)}`} className="btn btn-small">{t('fr.download')}</a>
+              <a href={r.audioSrc} download={`audio.${extFromMime(r.audioType)}`} className="btn btn-small">Download</a>
             </div>
           )}
           {hasChildren && (
             <div className="fr-children">
               {r.children!.map((child, ci) => (
-                <ResultItem key={ci} r={child} depth={depth + 1} onRetry={onRetry} t={t} />
+                <ResultItem key={ci} r={child} depth={depth + 1} onRetry={onRetry} />
               ))}
             </div>
           )}
@@ -91,14 +90,13 @@ function ResultItem({ r, depth, onRetry, t }: { r: TransformResult; depth: numbe
 }
 
 export default function FinalResponse({ results, onRetry }: Props) {
-  const { t } = useLanguage();
   if (results.length === 0) return null;
 
   return (
     <div className="final-response">
-      <h3 className="fr-heading">{t('fr.title')}</h3>
+      <h3 className="fr-heading">Final Response</h3>
       {results.map((r, i) => (
-        <ResultItem key={i} r={r} depth={0} onRetry={onRetry} t={t} />
+        <ResultItem key={i} r={r} depth={0} onRetry={onRetry} />
       ))}
     </div>
   );

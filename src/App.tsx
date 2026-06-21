@@ -9,7 +9,6 @@ import FinalResponse from './components/FinalResponse';
 import TaskPoller from './components/TaskPoller';
 import ResponseViewer from './components/ResponseViewer';
 import GlobalVars, { type GlobalVar } from './components/GlobalVars';
-import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import './App.css';
 
 interface ExportData {
@@ -39,15 +38,6 @@ function makeTemplate(): RequestTemplate {
 const EXAMPLE_ID = crypto.randomUUID();
 
 export default function App() {
-  return (
-    <LanguageProvider>
-      <AppInner />
-    </LanguageProvider>
-  );
-}
-
-function AppInner() {
-  const { t, lang, toggleLang } = useLanguage();
   const [templates, setTemplates] = useLocalStorage<RequestTemplate[]>(
     'rp_templates',
     [
@@ -445,9 +435,8 @@ function AppInner() {
         <GlobalVars vars={globalVars} onChange={setGlobalVars} />
 
         <div className="toolbar">
-          <button className="btn btn-small lang-btn" onClick={toggleLang}>{lang === 'zh' ? 'EN' : '中'}</button>
-          <button className="btn btn-small" onClick={handleExport}>{t('app.export')}</button>
-          <button className="btn btn-small" onClick={handleImport}>{t('app.import')}</button>
+          <button className="btn btn-small" onClick={handleExport}>Export</button>
+          <button className="btn btn-small" onClick={handleImport}>Import</button>
           <input ref={fileInputRef} type="file" accept=".json" className="hidden-input" onChange={handleImportFile} />
         </div>
 

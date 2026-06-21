@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { ParsedVar, SendHistoryEntry, VarConstraint } from '../types';
-import { useLanguage } from '../i18n/LanguageContext';
 import './DynamicForm.css';
 
 interface Props {
@@ -24,12 +23,11 @@ export default function DynamicForm({
   onFill,
   onClearHistory,
 }: Props) {
-  const { t } = useLanguage();
   const [showHistory, setShowHistory] = useState(false);
 
   return (
     <div className="dynamic-form">
-      <h3>{vars.length > 0 ? t('df.fillVars') : t('df.sendRequest')}</h3>
+      <h3>{vars.length > 0 ? 'Fill Variables' : 'Send Request'}</h3>
 
       {history.length > 0 && (
         <div className="df-history">
@@ -38,7 +36,7 @@ export default function DynamicForm({
             onClick={() => setShowHistory(!showHistory)}
           >
             <span>
-              {t('df.history')} ({history.length}) {showHistory ? '▲' : '▼'}
+              History ({history.length}) {showHistory ? '▲' : '▼'}
             </span>
             <button
               className="btn btn-small df-history-clear"
@@ -47,7 +45,7 @@ export default function DynamicForm({
                 onClearHistory();
               }}
             >
-              {t('df.clear')}
+              Clear
             </button>
           </button>
           {showHistory && (
@@ -57,14 +55,14 @@ export default function DynamicForm({
                   key={h.id}
                   className="df-history-item"
                   onClick={() => onFill(h.values)}
-                  title={t('df.clickFill')}
+                  title="Click to fill form with these values"
                 >
                   <span className="df-history-time">
                     {new Date(h.timestamp).toLocaleString()}
                   </span>
                   <span className="df-history-summary">
                     {h.error
-                      ? t('df.error')
+                      ? 'Error'
                       : h.duration !== null
                         ? `${h.duration}ms`
                         : '?'}
@@ -105,7 +103,7 @@ export default function DynamicForm({
         onClick={onSend}
         disabled={loading}
       >
-        {loading ? t('df.sending') : t('df.send')}
+        {loading ? 'Sending...' : 'Send Request'}
       </button>
     </div>
   );
