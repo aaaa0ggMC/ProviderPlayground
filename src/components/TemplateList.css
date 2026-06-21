@@ -1,0 +1,76 @@
+.template-list {
+  background: #1e1e2e;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #313244;
+  margin-bottom: 12px;
+}
+
+.tl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #313244;
+}
+
+.tl-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #cdd6f4;
+}
+
+.tl-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.tl-empty {
+  padding: 20px 14px;
+  color: #6c7086;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.tl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #313244;
+  color: #cdd6f4;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+.tl-item:last-child {
+  border-bottom: none;
+}
+
+.tl-item:hover {
+  background: #313244;
+}
+
+.tl-active {
+  background: #313244;
+  border-left: 3px solid #89b4fa;
+}
+
+.tl-item-name {
+  font-weight: 500;
+}
+
+.tl-item-method {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #89b4fa;
+  background: #1e1e2e;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}

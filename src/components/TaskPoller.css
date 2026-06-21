@@ -1,0 +1,68 @@
+.task-poller {
+  background: #1e1e2e;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #cba6f7;
+  margin-bottom: 12px;
+}
+
+.tp-heading {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cba6f7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #313244;
+}
+
+.tp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #252536;
+}
+.tp-item:last-child {
+  border-bottom: none;
+}
+
+.tp-label {
+  font-size: 0.82rem;
+  color: #cdd6f4;
+  font-weight: 500;
+}
+
+.tp-status {
+  font-size: 0.78rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.tp-polling .tp-status {
+  color: #89b4fa;
+}
+
+.tp-done .tp-status {
+  color: #a6e3a1;
+}
+
+.tp-failed .tp-status {
+  color: #f38ba8;
+}
+
+.tp-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #45475a;
+  border-top-color: #89b4fa;
+  border-radius: 50%;
+  animation: tp-spin 0.6s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes tp-spin {
+  to { transform: rotate(360deg); }
+}

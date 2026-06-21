@@ -1,0 +1,146 @@
+.response-viewer {
+  background: #1e1e2e;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #313244;
+  margin-bottom: 16px;
+}
+
+.rv-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rv-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #a6adc8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rv-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.rv-status {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.rv-status-ok {
+  background: #1a3826;
+  color: #a6e3a1;
+}
+
+.rv-status-err {
+  background: #3b1c1c;
+  color: #f38ba8;
+}
+
+.rv-duration {
+  font-size: 0.8rem;
+  color: #a6adc8;
+}
+
+.rv-error {
+  background: #3b1c1c;
+  color: #f38ba8;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+}
+
+/* Raw toggle */
+.rv-raw {
+  border-top: 1px solid #313244;
+}
+
+.rv-raw-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #6c7086;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.rv-raw-toggle:hover {
+  color: #a6adc8;
+}
+
+.rv-copy-btn {
+  margin-left: auto;
+}
+
+.rv-body {
+  background: #11111b;
+  color: #cdd6f4;
+  padding: 14px;
+  margin: 0;
+  font-size: 0.82rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+/* Folding JSON */
+.rj-obj,
+.rj-array {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.rj-key {
+  color: #89b4fa;
+}
+
+.rj-str {
+  color: #a6e3a1;
+}
+
+.rj-num {
+  color: #fab387;
+}
+
+.rj-bool {
+  color: #cba6f7;
+}
+
+.rj-null {
+  color: #6c7086;
+}
+
+.rj-str-fold {
+  color: #a6e3a1;
+  cursor: pointer;
+}
+.rj-str-fold:hover {
+  text-decoration: underline;
+}
+
+.rj-ellipsis {
+  color: #6c7086;
+  font-style: italic;
+}
+
+.rj-str-full {
+  word-break: break-all;
+}

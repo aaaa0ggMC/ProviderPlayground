@@ -1,0 +1,76 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  background: #11111b;
+  color: #cdd6f4;
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #89b4fa;
+  color: #11111b;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #74a8f7;
+}
+
+.btn-danger {
+  background: #3b1c1c;
+  color: #f38ba8;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #4a2424;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: #313244;
+  color: #cdd6f4;
+}
+
+.btn-small:hover {
+  background: #45475a;
+}
+
+.btn-full {
+  width: 100%;
+}
