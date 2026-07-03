@@ -30,6 +30,20 @@ function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; 
   const isRawResponse = r.label === 'Raw Response' && !hasChildren;
   const [rawCollapsed, setRawCollapsed] = useState(isRawResponse);
 
+  const downloadRaw = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!r.value) return;
+    const blob = new Blob([r.value], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'response.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fr-item">
       <div className="fr-item-header">
@@ -43,11 +57,18 @@ function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; 
             {r.label}
           </span>
         )}
-        {hasChildren && onRetry && (
-          <button className="fr-retry-btn" onClick={() => onRetry(r.label)} title="Retry task">
-            ↻
-          </button>
-        )}
+        <div className="fr-header-actions">
+          {isRawResponse && (
+            <button className="fr-action-btn" onClick={downloadRaw} title="Download response">
+              ⬇️
+            </button>
+          )}
+          {hasChildren && onRetry && (
+            <button className="fr-retry-btn" onClick={() => onRetry(r.label)} title="Retry task">
+              ↻
+            </button>
+          )}
+        </div>
       </div>
       {(!isRawResponse || !rawCollapsed) && (
         <>

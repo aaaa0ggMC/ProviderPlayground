@@ -38,6 +38,29 @@
   justify-content: space-between;
 }
 
+.fr-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fr-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 10px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: background 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fr-action-btn:hover {
+  background: #313244;
+}
+
 .fr-retry-btn {
   background: none;
   border: none;

@@ -27,6 +27,28 @@ export default function ResponseViewer({
     setRawOpen(!defaultCollapsed);
   }, [defaultCollapsed]);
 
+  const downloadBody = () => {
+    if (!body) return;
+    let extension = 'txt';
+    let finalContent = body;
+    try {
+      const parsed = JSON.parse(body);
+      extension = 'json';
+      finalContent = JSON.stringify(parsed, null, 2);
+    } catch {
+      // ignore
+    }
+    const blob = new Blob([finalContent], { type: extension === 'json' ? 'application/json' : 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `response.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (status === null && !error) return null;
 
   return (
@@ -68,6 +90,16 @@ export default function ResponseViewer({
               }}
             >
               Copy
+            </button>
+            <button
+              className="btn btn-small rv-download-btn"
+              style={{ marginLeft: '4px' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                downloadBody();
+              }}
+            >
+              Download
             </button>
           </button>
           {rawOpen && (
