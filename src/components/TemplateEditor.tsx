@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParsedVar, RequestTemplate, RespTransform } from '../types';
 import { extractAllVars } from '../parser/variableParser';
 import './TemplateEditor.css';
@@ -12,6 +12,52 @@ interface Props {
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
+
+/**
+ * Script editor with local text state. Typing updates only the local textarea
+ * (no parent re-render), so long scripts stay smooth. The "Update" button
+ * commits the text to the template and bumps scriptVersion to re-run it.
+ */
+function ScriptField({
+  script,
+  onCommit,
+}: {
+  script: string;
+  onCommit: (script: string) => void;
+}) {
+  const [text, setText] = useState(script);
+  const lastSynced = useRef(script);
+  // If the template's script changes from elsewhere (e.g. copy-from), sync in.
+  useEffect(() => {
+    if (script !== lastSynced.current && script !== text) {
+      setText(script);
+      lastSynced.current = script;
+    }
+  }, [script, text]);
+
+  const dirty = text !== lastSynced.current;
+  return (
+    <>
+      <textarea
+        className="te-input mono"
+        rows={8}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={`// object = parsed JSON, global_vars = {key: value}\n// context.transform.add_text(label, text) / add_img / add_audio / add_video\ncontext.transform.add_text('Reply', object.choices[0].message.content)\ncontext.transform.add_img('Image', object.data.url)`}
+      />
+      <button
+        className="btn btn-small"
+        onClick={() => {
+          lastSynced.current = text;
+          onCommit(text);
+        }}
+        title="Run this script and update its result"
+      >
+        Update{dirty ? ' *' : ''}
+      </button>
+    </>
+  );
+}
 
 export default function TemplateEditor({
   template,
@@ -299,11 +345,12 @@ export default function TemplateEditor({
                     <option value="audio-url">Audio URL</option>
                     <option value="video-url">Video URL</option>
                     <option value="task">Task</option>
+                    <option value="script">Script</option>
                   </select>
                   {rt.type === 'text' && (
                     <div className="te-field-group">
                       <label className="te-field-label">
-                        Format <span className="te-field-hint">— JSON paths like {'{.path}'}; arrays auto-expand (e.g. {'{.choices.message.content}'})</span>
+                        Format <span className="te-field-hint">— JSON paths {'{.path}'}; arrays enumerate as {'0. ... 1. ...'}. Use {'[X]'} to sync multiple paths over the same array (e.g. {'{.data[X].id} {.data[X].abilities}'}). Different array roots combine as a Cartesian product.</span>
                       </label>
                       <textarea
                         className="te-input mono"
@@ -318,10 +365,86 @@ export default function TemplateEditor({
                       />
                     </div>
                   )}
+                  {rt.type === 'script' && (
+                    <>
+                    <div className="te-field-group">
+                      <label className="te-field-label">
+                        Script <span className="te-field-hint">— JS. `{'object'}` = parsed JSON, `{'global_vars'}` = globals. Use `{'context.transform.add_text(label, text)'}` / `{'add_img'}` / `{'add_audio'}` / `{'add_video'}`. `{'console.log'}` works.</span>
+                      </label>
+                      <ScriptField
+                        script={rt.script}
+                        onCommit={(newScript) => {
+                          const next = [...transforms];
+                          next[i] = { ...next[i], script: newScript, scriptVersion: (next[i].scriptVersion ?? 0) + 1 };
+                          update({ respTransforms: next });
+                        }}
+                      />
+                    </div>
+                    <div className="te-field-group">
+                      <label className="te-field-label">
+                        Local Vars <span className="te-field-hint">— available in script as `{'context.local.NAME'}`. Click Update to apply.</span>
+                      </label>
+                      <div className="te-kv-rows">
+                        {(rt.localVars ?? []).map((lv, j) => (
+                          <div key={j} className="te-kv-row">
+                            <input
+                              className="te-input mono te-kv-key"
+                              value={lv.key}
+                              onChange={(e) => {
+                                const next = [...transforms];
+                                const vars = [...(next[i].localVars ?? [])];
+                                vars[j] = { ...vars[j], key: e.target.value };
+                                next[i] = { ...next[i], localVars: vars };
+                                update({ respTransforms: next });
+                              }}
+                              placeholder="name"
+                              spellCheck={false}
+                            />
+                            <input
+                              className="te-input mono te-kv-value"
+                              value={lv.value}
+                              onChange={(e) => {
+                                const next = [...transforms];
+                                const vars = [...(next[i].localVars ?? [])];
+                                vars[j] = { ...vars[j], value: e.target.value };
+                                next[i] = { ...next[i], localVars: vars };
+                                update({ respTransforms: next });
+                              }}
+                              placeholder="value"
+                              spellCheck={false}
+                            />
+                            <button
+                              className="btn btn-small te-kv-del"
+                              onClick={() => {
+                                const next = [...transforms];
+                                const vars = (next[i].localVars ?? []).filter((_, k) => k !== j);
+                                next[i] = { ...next[i], localVars: vars };
+                                update({ respTransforms: next });
+                              }}
+                              title="Remove"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        className="btn btn-small"
+                        onClick={() => {
+                          const next = [...transforms];
+                          next[i] = { ...next[i], localVars: [...(next[i].localVars ?? []), { key: '', value: '' }] };
+                          update({ respTransforms: next });
+                        }}
+                      >
+                        + Add Local Var
+                      </button>
+                    </div>
+                    </>
+                  )}
                   {rt.type === 'img' && (
                     <div className="te-field-group">
                       <label className="te-field-label">
-                        Entry Path <span className="te-field-hint">— JSON path to the image field in response</span>
+                        Entry Path <span className="te-field-hint">— JSON path to the image field; arrays enumerate all items</span>
                       </label>
                       <input
                         type="text"
@@ -588,6 +711,9 @@ export default function TemplateEditor({
                                 entry: '',
                                 encoding: 'base64',
                                 audioMime: '',
+                                script: '',
+                                scriptVersion: 0,
+                                localVars: [],
                                 taskAddr: '',
                                 taskMethod: 'GET',
                                 taskHeaders: '',
@@ -907,6 +1033,9 @@ export default function TemplateEditor({
                       entry: '',
                       encoding: 'base64',
                       audioMime: '',
+                      script: '',
+                      scriptVersion: 0,
+                      localVars: [],
                       taskAddr: '',
                       taskMethod: 'GET',
                       taskHeaders: '',

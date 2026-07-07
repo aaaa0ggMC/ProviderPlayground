@@ -360,3 +360,31 @@
 .te-nested-body select:focus {
   border-color: #89b4fa;
 }
+
+.te-kv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.te-kv-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.te-kv-key {
+  flex: 0 0 30%;
+}
+
+.te-kv-value {
+  flex: 1;
+}
+
+.te-kv-del {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  line-height: 1;
+  font-size: 1rem;
+}

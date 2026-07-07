@@ -21,12 +21,18 @@ export interface TemplatePart {
 
 export interface RespTransform {
   id: string;
-  type: 'text' | 'img' | 'audio' | 'audio-url' | 'video-url' | 'task';
+  type: 'text' | 'img' | 'audio' | 'audio-url' | 'video-url' | 'task' | 'script';
   label: string;
   format: string;
   entry: string;
   encoding: 'base64' | 'hex8';
   audioMime: string;
+  /** User JS source for `script` transforms. */
+  script: string;
+  /** Bumped by the "Update" button; script only re-executes when this changes. */
+  scriptVersion: number;
+  /** Local key/value pairs accessible to `script` transforms via `context.local`. */
+  localVars: { key: string; value: string }[];
   // Task acquire
   taskAddr: string;
   taskMethod: string;

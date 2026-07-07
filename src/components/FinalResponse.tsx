@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useDeferredValue, useState } from 'react';
 import type { TransformResult } from '../parser/variableParser';
 import './FinalResponse.css';
 
@@ -25,7 +25,7 @@ function extFromMime(mime: string | undefined): string {
   }
 }
 
-function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; onRetry?: (label: string) => void }) {
+const ResultItem = memo(function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; onRetry?: (label: string) => void }) {
   const hasChildren = r.children && r.children.length > 0;
   const isRawResponse = r.label === 'Raw Response' && !hasChildren;
   const [rawCollapsed, setRawCollapsed] = useState(isRawResponse);
@@ -108,17 +108,26 @@ function ResultItem({ r, depth, onRetry }: { r: TransformResult; depth: number; 
       )}
     </div>
   );
-}
+});
 
 export default function FinalResponse({ results, onRetry }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
+  // Defer rendering the (potentially 200+) result items so they don't block
+  // typing in the template editor. The heading stays responsive; items render
+  // at low priority and memo prevents re-rendering items whose `r` is unchanged.
+  const deferredResults = useDeferredValue(results);
   if (results.length === 0) return null;
 
   return (
     <div className="final-response">
-      <h3 className="fr-heading">Final Response</h3>
-      {results.map((r, i) => (
-        <ResultItem key={i} r={r} depth={0} onRetry={onRetry} />
-      ))}
+      <div className="fr-heading" onClick={() => setCollapsed((c) => !c)}>
+        <span className="fr-toggle">{collapsed ? '+' : '-'}</span>
+        Final Response
+      </div>
+      {!collapsed &&
+        deferredResults.map((r, i) => (
+          <ResultItem key={i} r={r} depth={0} onRetry={onRetry} />
+        ))}
     </div>
   );
 }

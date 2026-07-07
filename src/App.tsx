@@ -334,14 +334,24 @@ export default function App() {
   }, []);
 
   const [transformed, setTransformed] = useState<TransformResult[]>([]);
+  const nonTaskTransforms = useMemo(
+    () => (Array.isArray(active?.respTransforms) ? active!.respTransforms.filter((t) => t.type !== 'task') : []),
+    [active],
+  );
+  const bodyRef = useRef(response.body);
+  bodyRef.current = response.body;
   useEffect(() => {
-    if (!active || !response.body || !Array.isArray(active.respTransforms)) {
+    if (!active || !response.body || nonTaskTransforms.length === 0) {
       setTransformed([]);
       return;
     }
-    const nonTask = active.respTransforms.filter((t) => t.type !== 'task');
-    applyTransforms(response.body, nonTask).then(setTransformed);
-  }, [active, response.body]);
+    // Debounce: editing a transform fires this effect per keystroke; wait a
+    // tick so rapid edits don't re-run 200+ row iterations on each keystroke.
+    const handle = setTimeout(() => {
+      applyTransforms(bodyRef.current, nonTaskTransforms, globalVarMap).then(setTransformed);
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [active, response.body, nonTaskTransforms, globalVarMap]);
 
   // Combined: non-task transforms + async task results
   const allResults = useMemo(
