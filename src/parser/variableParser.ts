@@ -162,17 +162,16 @@ const PATH_RE = /\{\.([^}]+)\}/g;
 
 /** Walk a parsed JSON value using a dot/bracket path like ".choices[0].message.content" */
 export function resolveJsonPath(root: unknown, path: string): unknown {
-  const segments = path.match(/\.([^.[\]]+)|\[(\d+)\]/g);
+  const segments = path.match(/[^.[\]]+|\[(\d+)\]/g);
   if (!segments) return undefined;
   let cur: unknown = root;
   for (const seg of segments) {
     if (cur == null) return undefined;
-    if (seg.startsWith('.')) {
-      const key = seg.slice(1);
-      cur = (cur as Record<string, unknown>)[key];
-    } else {
+    if (seg.startsWith('[')) {
       const idx = parseInt(seg.slice(1, -1), 10);
       cur = (cur as unknown[])[idx];
+    } else {
+      cur = (cur as Record<string, unknown>)[seg];
     }
   }
   return cur;
@@ -189,14 +188,23 @@ function resolveJsonPathExpanded(
   root: unknown,
   path: string,
 ): { value: unknown; expanded: boolean } {
-  const segments = path.match(/\.([^.[\]]+)|\[(\d+)\]/g);
+  const segments = path.match(/[^.[\]]+|\[(\d+)\]/g);
   if (!segments) return { value: undefined, expanded: false };
   let cur: unknown[] = [root];
   let expanded = false;
   for (const seg of segments) {
     const next: unknown[] = [];
-    if (seg.startsWith('.')) {
-      const key = seg.slice(1);
+    if (seg.startsWith('[')) {
+      const idx = parseInt(seg.slice(1, -1), 10);
+      for (const v of cur) {
+        if (Array.isArray(v)) {
+          next.push((v as unknown[])[idx]);
+        } else {
+          next.push(undefined);
+        }
+      }
+    } else {
+      const key = seg;
       for (const v of cur) {
         if (Array.isArray(v)) {
           expanded = true;
@@ -205,15 +213,6 @@ function resolveJsonPathExpanded(
           }
         } else if (v != null && typeof v === 'object') {
           next.push((v as Record<string, unknown>)[key]);
-        } else {
-          next.push(undefined);
-        }
-      }
-    } else {
-      const idx = parseInt(seg.slice(1, -1), 10);
-      for (const v of cur) {
-        if (Array.isArray(v)) {
-          next.push((v as unknown[])[idx]);
         } else {
           next.push(undefined);
         }
