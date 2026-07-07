@@ -303,7 +303,7 @@ export default function TemplateEditor({
                   {rt.type === 'text' && (
                     <div className="te-field-group">
                       <label className="te-field-label">
-                        Format <span className="te-field-hint">— JSON path expressions like {'{.path}'}</span>
+                        Format <span className="te-field-hint">— JSON paths like {'{.path}'}; arrays auto-expand (e.g. {'{.choices.message.content}'})</span>
                       </label>
                       <textarea
                         className="te-input mono"

@@ -178,6 +178,73 @@ export function resolveJsonPath(root: unknown, path: string): unknown {
   return cur;
 }
 
+/**
+ * Walk a JSON path with array auto-expansion: when a `.key` segment hits an
+ * array, the path is mapped over every element (and results flattened).
+ * `[n]` still indexes a single element. Returns the resolved value plus a flag
+ * telling whether expansion occurred (so callers can distinguish a leaf array
+ * value from an array produced by expansion).
+ */
+function resolveJsonPathExpanded(
+  root: unknown,
+  path: string,
+): { value: unknown; expanded: boolean } {
+  const segments = path.match(/\.([^.[\]]+)|\[(\d+)\]/g);
+  if (!segments) return { value: undefined, expanded: false };
+  let cur: unknown[] = [root];
+  let expanded = false;
+  for (const seg of segments) {
+    const next: unknown[] = [];
+    if (seg.startsWith('.')) {
+      const key = seg.slice(1);
+      for (const v of cur) {
+        if (Array.isArray(v)) {
+          expanded = true;
+          for (const item of v) {
+            next.push(item == null ? undefined : (item as Record<string, unknown>)[key]);
+          }
+        } else if (v != null && typeof v === 'object') {
+          next.push((v as Record<string, unknown>)[key]);
+        } else {
+          next.push(undefined);
+        }
+      }
+    } else {
+      const idx = parseInt(seg.slice(1, -1), 10);
+      for (const v of cur) {
+        if (Array.isArray(v)) {
+          next.push((v as unknown[])[idx]);
+        } else {
+          next.push(undefined);
+        }
+      }
+    }
+    cur = next;
+  }
+  return expanded ? { value: cur, expanded: true } : { value: cur[0], expanded: false };
+}
+
+/**
+ * Resolve a `{.path}` expression for a text transform into its replacement
+ * string. Arrays produced by auto-expansion are flattened: string elements are
+ * concatenated, other values are JSON-stringified and concatenated. A leaf
+ * array (no expansion) is JSON-stringified as before.
+ */
+function resolveTextPath(json: unknown, path: string): string {
+  const { value, expanded } = resolveJsonPathExpanded(json, path);
+  if (value === undefined || value === null) return `{.${path}}`;
+  if (expanded && Array.isArray(value)) {
+    const items = value.filter((v) => v !== undefined && v !== null);
+    if (items.length === 0) return `{.${path}}`;
+    if (items.every((v) => typeof v === 'string')) return items.join('');
+    return items
+      .map((v) => (typeof v === 'string' ? v : JSON.stringify(v)))
+      .join('');
+  }
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
 export interface TransformResult {
   kind: 'text' | 'img' | 'audio' | 'video';
   label: string;
@@ -279,12 +346,9 @@ export async function applyTransforms(
 
   return Promise.all(transforms.map(async (t) => {
     if (t.type === 'text' && t.format) {
-      const text = t.format.replace(PATH_RE, (_, path: string) => {
-        const val = resolveJsonPath(json, path.trim());
-        if (val === undefined || val === null) return `{.${path}}`;
-        if (typeof val === 'string') return val;
-        return JSON.stringify(val);
-      });
+      const text = t.format.replace(PATH_RE, (_, path: string) =>
+        resolveTextPath(json, path.trim()),
+      );
       return { kind: 'text', label: t.label, value: text };
     }
     if (t.type === 'img' && t.entry) {
