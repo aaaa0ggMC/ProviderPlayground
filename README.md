@@ -2,6 +2,8 @@
 
 An API request playground with template-driven variable interpolation and response transforms.
 
+Explore at https://aaaa0ggmc.github.io/ProviderPlayground/
+
 ## Features
 
 - **Request Templates** — Define API requests with URL, headers, body, and method. Use `{{varName}}` syntax for variable interpolation.
